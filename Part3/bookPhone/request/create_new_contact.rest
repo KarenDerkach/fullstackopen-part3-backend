@@ -1,0 +1,7 @@
+POST http://localhost:3002/api/form
+Content-Type: application/json
+
+{
+    "name": "Karen Derkach",
+    "number": "03794665541"
+}
