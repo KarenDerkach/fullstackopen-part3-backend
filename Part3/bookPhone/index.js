@@ -10,8 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 const { v4: uuidv4 } = require('uuid');
-const randomUuid = uuidv4()
-console.log("UUID", randomUuid);
+
 let contacts = [
     {
         "id": "1",
