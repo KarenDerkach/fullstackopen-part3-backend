@@ -9,35 +9,31 @@ app.use(express.json());
 
 app.use(express.urlencoded({ extended: false }));
 
-
 const { v4: uuidv4 } = require('uuid');
 const randomUuid = uuidv4()
+console.log("UUID", randomUuid);
 let contacts = [
     {
-        "id": 1,
+        "id": "1",
         "name": "Arto Hellas",
         "number": "040-123456"
     },
     {
-        "id": 2,
+        "id": "2",
         "name": "Ada Lovelace",
         "number": "39-44-5323523"
     },
     {
-        "id": 3,
+        "id": "3",
         "name": "Dan Abramov",
         "number": "12-43-234345"
     },
     {
-        "id": 4,
+        "id": "4",
         "name": "Mary Poppendieck",
         "number": "39-23-6423122"
     }
 ]
-const generateId = () => {
-    let maxRandom = randomUuid
-    return maxRandom;
-};
 
 app.get("/api/persons", (req, resp) => {
     resp.json(contacts)
@@ -71,7 +67,7 @@ app.get("/info", (req, resp) => {
 // CREATE CONTACT
 app.post("/api/persons", (req, resp) => {
     const body = req.body;
-    console.log("BODY0", body);
+
     if (!body.name || !body.number) {
         return resp.status(400).json({
             error: "name or number missing"
@@ -87,7 +83,7 @@ app.post("/api/persons", (req, resp) => {
     let contact = {
         name: body.name,
         number: body.number,
-        id: generateId()
+        id: uuidv4(),
     }
 
     contacts = contacts.concat(contact)
@@ -101,16 +97,37 @@ app.get("/api/persons/:id", (req, resp) => {
     if (person) {
         resp.json(person)
     } else {
-        resp.status(404).end()
+        resp.status(404).json({
+            error: "name or number missing"
+        })
+    }
+})
+
+app.patch("/api/persons/:id", (req, resp) => {
+    const { id } = req.params
+    const { number } = req.body
+    if (!number) {
+        return resp.status(400).json({ error: 'Phone number is required' });
+    }
+    const contact = contacts.find(elem => elem.id === id)
+    if (contact) {
+        contact.number = number;
+        resp.json(contact)
+    } else {
+        return resp.status(404).json({ error: "Something was wrong" })
     }
 })
 
 // DELETE
 app.delete("/api/persons/:id", (req, resp) => {
-    const id = Number(req.params.id)
-
+    const id = req.params.id
     contacts = contacts.filter(elem => elem.id !== id)
-    resp.status(204).end();
+    if (contacts) {
+        return resp.status(204).json("deleted contact");
+
+    } else {
+        return resp.status(404).json("error")
+    }
 })
 
 
