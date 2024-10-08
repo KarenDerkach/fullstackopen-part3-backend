@@ -17,9 +17,7 @@ app.use(express.json());
 
 app.use(express.urlencoded({ extended: false }));
 
-//Middleware
-// Función personalizada para combinar el formato 'tiny' y registrar el cuerpo en las solicitudes POST
-app.use(unknownEndpoint)
+
 
 morgan.token('body', function (req, res) {
     if (req.method === 'POST') {
@@ -182,7 +180,9 @@ app.delete("/api/persons/:id", (req, resp) => {
 const unknownEndpoint = (req, resp) => {
     resp.status(404).send({ error: 'unknown endpoint' })
 }
-
+//Middleware
+// Función personalizada para combinar el formato 'tiny' y registrar el cuerpo en las solicitudes POST
+app.use(unknownEndpoint)
 
 
 
