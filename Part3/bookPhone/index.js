@@ -4,6 +4,8 @@ const { connection, Contact } = require('./dbConnection')
 const cors = require('cors')
 
 const app = express()
+
+//Middleware que permite renderizar contenido estatico (HTML, por ejemplo del build realizado en nuestro front que se aloja en la carpeta 'dist')
 app.use(express.static('dist'))
 
 /**CORS:principios universales del funcionamiento de las aplicaciones web
@@ -17,6 +19,8 @@ app.use(express.urlencoded({ extended: false }));
 
 //Middleware
 // Función personalizada para combinar el formato 'tiny' y registrar el cuerpo en las solicitudes POST
+app.use(unknownEndpoint)
+
 morgan.token('body', function (req, res) {
     if (req.method === 'POST') {
         return JSON.stringify(req.body)
@@ -179,6 +183,6 @@ const unknownEndpoint = (req, resp) => {
     resp.status(404).send({ error: 'unknown endpoint' })
 }
 
-app.use(unknownEndpoint)
+
 
 
