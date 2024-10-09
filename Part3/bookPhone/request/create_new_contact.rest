@@ -2,7 +2,7 @@ POST http://localhost:3002/api/persons
 Content-Type: application/json
 
 {
-    "name": "Karen Derkach",
+    "name": "pepe",
     "number": "03794665541"
 }
 
@@ -11,4 +11,4 @@ Content-Type: application/json
 GET http://localhost:3002/api/persons
 
 ###
-DELETE  http://localhost:3002/api/persons/1
+DELETE  http://localhost:3002/api/persons/67056eb61e7cb36ac5a79efc

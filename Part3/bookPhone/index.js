@@ -1,6 +1,6 @@
+const { connection, Contact } = require('./dbConnection')
 const express = require("express")
 var morgan = require('morgan')
-const { connection, Contact } = require('./dbConnection')
 const cors = require('cors')
 
 const app = express()
@@ -57,21 +57,28 @@ let contacts = [
 ]
 
 const PORT = process.env.PORT || 3002
-app.listen(PORT, async () => {
+const startServer = async () => {
     try {
-        console.log(`server running on port ${PORT}`)
-        //await connection()
-        console.log('CONNECTION DB OK')
-    } catch (err) {
-        console.log(err);
+        await connection();  // Conectar a la base de datos antes de iniciar el servidor
+        console.log('Conectado a MongoDB Atlas');
 
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error('Error al iniciar el servidor:', error);
     }
-})
+};
+
+startServer();
 
 //ROUTES 
 
 app.get("/api/persons", (req, resp) => {
-    resp.send(contacts)
+    Contact.find({}).then(contacts => {
+        resp.json(contacts)
+    })
+
 
 })
 
@@ -106,75 +113,108 @@ app.post("/api/persons", (req, resp) => {
     const body = req.body;
 
 
-    const maxId = contacts.length > 0 ? Math.max(...contacts.map(e => e.id)) : 0
+    // const maxId = contacts.length > 0 ? Math.max(...contacts.map(e => e.id)) : 0
 
     if (!body.name || !body.number) {
         return resp.status(400).json({
             error: "name or number missing"
         })
     }
-    const findDuplicate = contacts.find(elem => elem.name === body.name)
+    Contact.findOne({ number: body.number })
+        .then(existingContact => {
+            if (existingContact) {
+                return resp.status(400).json({
+                    error: "number must be unique"
+                });
+            }
 
-    if (findDuplicate) {
-        return resp.status(400).json({
-            error: "name must be unique"
+            let contact = new Contact({
+                name: body.name,
+                number: body.number,
+
+            })
+
+            // contacts = contacts.concat(contact)
+            contact.save().then(savedContact => {
+
+                resp.json(savedContact)
+            })
         })
-    }
-    let contact = {
-        name: body.name,
-        number: body.number,
-        id: maxId + 1,
-    }
+        .catch(error => {
+            console.error(error);
+            resp.status(500).json({ error: "server error" });
+        });
 
-    contacts = contacts.concat(contact)
-
-    resp.json(contact)
 })
 //FIND PERSON BY ID
 app.get("/api/persons/:id", (req, resp) => {
     const id = req.params.id
-    const person = contacts.find((c) => c.id === id)
-    if (person) {
-        resp.json(person)
-    } else {
-        resp.status(404).json({
-            error: "name or number missing"
+    //const person = contacts.find((c) => c.id === id)
+    Contact.findById(id)
+        .then(person => {
+
+            if (person) {
+                resp.json(person)
+            } else {
+                resp.status(404).json({
+                    error: "name or number missing"
+                })
+            }
         })
-    }
+        .catch(error => {
+            console.error(error);
+            resp.status(500).json({ error: "server error" });
+        });
 })
 
 
 
+// UPDATE PHONE NUMBER
 app.patch("/api/persons/:id", (req, resp) => {
-    const { id } = req.params
-    const { number } = req.body
+    const { id } = req.params;
+    const { number } = req.body;
+
     if (!number) {
         return resp.status(400).json({ error: 'Phone number is required' });
     }
-    const contact = contacts.find(elem => elem.id === id)
-    if (contact) {
-        contact.number = number;
-        resp.json(contact)
-    } else {
-        return resp.status(404).json({ error: "Something was wrong" })
-    }
-})
 
-// DELETE
+    Contact.findByIdAndUpdate(
+        id,
+        { number },
+        { new: true, runValidators: true } // Devuelve el documento actualizado y aplica validadores de esquema
+    )
+        .then(updatedContact => {
+            if (updatedContact) {
+                resp.json(updatedContact);
+            } else {
+                return resp.status(404).json({ error: "Contact not found" });
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            resp.status(500).json({ error: "Server error" });
+        });
+});
+
+// DELETE CONTACT
 app.delete("/api/persons/:id", (req, resp) => {
-    const id = Number(req.params.id)
+    const id = req.params.id;
 
-    const deletedID = contacts.find(elem => elem.id === id)
+    Contact.findByIdAndDelete(id)
+        .then(deletedContact => {
+            console.log(deletedContact);
 
-
-    if (deletedID) {
-        contacts = contacts.filter(elem => elem.id !== id)
-        return resp.status(204).json({ contacts });
-
-    } else {
-        return resp.status(404).json("error")
-    }
-})
+            if (deletedContact) {
+                return resp.status(204).end(); // Respuesta 204: No Content
+            } else {
+                return resp.status(404).json({ error: "Contact not found" });
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            resp.status(500).json({ error: "Server error" });
+        });
+});
 
 //Middleware
 const unknownEndpoint = (req, resp) => {
