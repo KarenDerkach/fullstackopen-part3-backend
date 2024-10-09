@@ -147,7 +147,7 @@ app.post("/api/persons", (req, resp) => {
 
 })
 //FIND PERSON BY ID
-app.get("/api/persons/:id", (req, resp) => {
+app.get("/api/persons/:id", (req, resp, next) => {
     const id = req.params.id
     //const person = contacts.find((c) => c.id === id)
     Contact.findById(id)
@@ -161,10 +161,11 @@ app.get("/api/persons/:id", (req, resp) => {
                 })
             }
         })
-        .catch(error => {
-            console.error(error);
-            resp.status(500).json({ error: "server error" });
-        });
+        // .catch(error => {
+        //     console.error(error);
+        //     resp.status(500).json({ error: "server error" });
+        // });
+        .catch(error => next(error))
 })
 
 
@@ -221,8 +222,19 @@ const unknownEndpoint = (req, resp) => {
     resp.status(404).send({ error: 'unknown endpoint' })
 }
 //Middleware
-// Función personalizada para combinar el formato 'tiny' y registrar el cuerpo en las solicitudes POST
+// controlador de solicitudes con endpoint desconocido
 app.use(unknownEndpoint)
 
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
 
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+
+    next(error)
+}
+
+// controlador de solicitudes que resulten en errores
+app.use(errorHandler)
 
