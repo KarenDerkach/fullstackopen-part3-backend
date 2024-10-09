@@ -22,8 +22,22 @@ mongoose.connection.on('error', (error) => {
 
 // Definir esquema y modelo
 const contactSchema = new mongoose.Schema({
-    name: String,
-    number: String,
+    name: {
+        type: String,
+        // minLength: 5,
+        required: true
+    },
+    number: {
+        type: String,
+        validate: {
+            validator: function (v) {
+                return /\d{3}-\d{3}-\d{4}/.test(v);
+            },
+            message: props => `${props.value} is not a valid phone number!`
+        },
+        required: [true, 'User phone number required']
+    }
+
 });
 //Seteo que permite convertir en string el id que genera mongodb porque originalmente es un objeto
 contactSchema.set('toJSON', {

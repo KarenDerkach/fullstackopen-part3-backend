@@ -31,7 +31,6 @@ app.use(
     morgan(':method :url :status :res[content-length] - :response-time ms :body')
 );
 
-const { v4: uuidv4 } = require('uuid');
 
 let contacts = [
     {
@@ -109,17 +108,17 @@ app.get("/info", (req, resp) => {
 // });
 
 // CREATE CONTACT
-app.post("/api/persons", (req, resp) => {
+app.post("/api/persons", (req, resp, next) => {
     const body = req.body;
 
 
     // const maxId = contacts.length > 0 ? Math.max(...contacts.map(e => e.id)) : 0
 
-    if (!body.name || !body.number) {
-        return resp.status(400).json({
-            error: "name or number missing"
-        })
-    }
+    // if (!body.name || !body.number) {
+    //     return resp.status(400).json({
+    //         error: "name or number missing"
+    //     })
+    // }
     Contact.findOne({ number: body.number })
         .then(existingContact => {
             if (existingContact) {
@@ -135,15 +134,18 @@ app.post("/api/persons", (req, resp) => {
             })
 
             // contacts = contacts.concat(contact)
-            contact.save().then(savedContact => {
+            contact.save()
+                .then(savedContact => {
 
-                resp.json(savedContact)
-            })
+                    resp.json(savedContact)
+                })
+                .catch(error => next(error))
         })
         .catch(error => {
             console.error(error);
             resp.status(500).json({ error: "server error" });
         });
+
 
 })
 //FIND PERSON BY ID
@@ -182,7 +184,11 @@ app.patch("/api/persons/:id", (req, resp) => {
     Contact.findByIdAndUpdate(
         id,
         { number },
-        { new: true, runValidators: true } // Devuelve el documento actualizado y aplica validadores de esquema
+        {
+            new: true,
+            runValidators: true,
+            context: 'query'
+        } // Devuelve el documento actualizado y aplica validadores de esquema
     )
         .then(updatedContact => {
             if (updatedContact) {
@@ -230,6 +236,8 @@ const errorHandler = (error, request, response, next) => {
 
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
     }
 
     next(error)
